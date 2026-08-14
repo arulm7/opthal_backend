@@ -41,4 +41,12 @@ public class AnswerController {
 
         return answerService.getAnswers(questionId);
     }
+    @DeleteMapping("/{questionId}/answers/{answerId}")
+    public String deleteAnswer(
+            @PathVariable Long questionId,
+            @PathVariable Long answerId) {
+
+        return answerService.deleteAnswer(questionId, answerId);
+    }
+
 }

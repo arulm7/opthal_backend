@@ -150,6 +150,31 @@ public class AnswerService {
         return savedAnswerBlock;
     }
 
+    // =========================
+// DELETE ANSWER
+// =========================
+
+    public String deleteAnswer(Long questionId, Long answerId) {
+
+        if (!questionRepository.existsById(questionId)) {
+            throw new RuntimeException("Question not found");
+        }
+
+        AnswerBlock answerBlock = answerBlockRepository
+                .findById(answerId)
+                .orElseThrow(() ->
+                        new RuntimeException("Answer not found"));
+
+        if (!answerBlock.getQuestion().getId().equals(questionId)) {
+            throw new RuntimeException(
+                    "Answer does not belong to this question");
+        }
+
+        answerBlockRepository.delete(answerBlock);
+
+        return "Answer deleted successfully";
+    }
+
 
     // =========================
     // GET ANSWERS

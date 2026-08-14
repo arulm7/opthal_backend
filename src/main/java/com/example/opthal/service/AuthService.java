@@ -6,6 +6,7 @@ import com.example.opthal.dto.RegisterRequest;
 import com.example.opthal.model.Role;
 import com.example.opthal.model.User;
 import com.example.opthal.repository.UserRepository;
+import com.example.opthal.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +15,16 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    private final JwtService jwtService;
+
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService) {
+
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     public String register(RegisterRequest request) {
@@ -34,7 +42,10 @@ public class AuthService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        user.setPassword(
+                passwordEncoder.encode(request.getPassword())
+        );
 
         // Every public registration is USER
         user.setRole(Role.USER);
@@ -44,20 +55,35 @@ public class AuthService {
         return "User registered successfully";
     }
 
-    public LoginResponse login(LoginRequest request){
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(()->new RuntimeException("Invalid email or password"));
+    public LoginResponse login(LoginRequest request) {
 
-        if(!passwordEncoder.matches(
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Invalid email or password"
+                        )
+                );
+
+        if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword()
-        )){
-            throw new RuntimeException("Invalid email or password");
+        )) {
+            throw new RuntimeException(
+                    "Invalid email or password"
+            );
         }
+
+        // Generate JWT after successful login
+        String token = jwtService.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
+
         return new LoginResponse(
-                "login sucess",
+                "login success",
                 user.getRole().name(),
-                user.getName()
+                user.getName(),
+                token
         );
     }
 }
