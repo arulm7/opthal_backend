@@ -14,8 +14,15 @@ public class AnswerTable {
     @JoinColumn(name = "answer_block_id", nullable = false, unique = true)
     private AnswerBlock answerBlock;
 
+    @OneToMany(mappedBy = "table", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<TableColumn> columns = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "table", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<TableRow> rows = new java.util.ArrayList<>();
+
     public AnswerTable() {
     }
+
 
     public Long getId() {
         return id;
@@ -32,4 +39,20 @@ public class AnswerTable {
     public void setAnswerBlock(AnswerBlock answerBlock) {
         this.answerBlock = answerBlock;
     }
-}
+
+    public java.util.List<TableColumn> getColumns() {
+        return columns;
+    }
+
+    public void setColumns(java.util.List<TableColumn> columns) {
+        this.columns = columns;
+    }
+
+    public java.util.List<TableRow> getRows() {
+        return rows;
+    }
+
+    public void setRows(java.util.List<TableRow> rows) {
+        this.rows = rows;
+    }
+}

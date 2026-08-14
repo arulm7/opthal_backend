@@ -17,8 +17,12 @@ public class TableRow {
     @Column(nullable = false)
     private Integer displayOrder;
 
+    @OneToMany(mappedBy = "row", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<TableCell> cells = new java.util.ArrayList<>();
+
     public TableRow() {
     }
+
 
     public Long getId() {
         return id;
@@ -43,4 +47,12 @@ public class TableRow {
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
     }
-}
+
+    public java.util.List<TableCell> getCells() {
+        return cells;
+    }
+
+    public void setCells(java.util.List<TableCell> cells) {
+        this.cells = cells;
+    }
+}

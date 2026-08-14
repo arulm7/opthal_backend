@@ -47,6 +47,7 @@ public class AnswerService {
         this.tableCellRepository = tableCellRepository;
     }
 
+
     // =========================
     // ADD TEXT ANSWER
     // =========================
@@ -82,7 +83,6 @@ public class AnswerService {
                 .orElseThrow(() ->
                         new RuntimeException("Question not found"));
 
-        // Create AnswerBlock
         AnswerBlock answerBlock = new AnswerBlock();
 
         answerBlock.setQuestion(question);
@@ -150,11 +150,189 @@ public class AnswerService {
         return savedAnswerBlock;
     }
 
-    // =========================
-// DELETE ANSWER
-// =========================
 
-    public String deleteAnswer(Long questionId, Long answerId) {
+    // =========================
+    // UPDATE TEXT ANSWER
+    // =========================
+
+    public AnswerBlock updateTextAnswer(
+            Long questionId,
+            Long answerId,
+            TextAnswerRequest request) {
+
+        if (!questionRepository.existsById(questionId)) {
+            throw new RuntimeException("Question not found");
+        }
+
+        AnswerBlock answerBlock = answerBlockRepository
+                .findById(answerId)
+                .orElseThrow(() ->
+                        new RuntimeException("Answer not found"));
+
+        if (!answerBlock.getQuestion().getId().equals(questionId)) {
+            throw new RuntimeException(
+                    "Answer does not belong to this question");
+        }
+
+        if (answerBlock.getType() != AnswerBlockType.TEXT) {
+            throw new RuntimeException(
+                    "Answer is not a TEXT answer");
+        }
+
+        answerBlock.setContent(request.getContent());
+        answerBlock.setDisplayOrder(request.getDisplayOrder());
+
+        return answerBlockRepository.save(answerBlock);
+    }
+
+
+    // =========================
+    // UPDATE TABLE ANSWER
+    // =========================
+
+    public AnswerBlock updateTableAnswer(
+            Long questionId,
+            Long answerId,
+            TableAnswerRequest request) {
+
+        if (!questionRepository.existsById(questionId)) {
+            throw new RuntimeException("Question not found");
+        }
+
+        AnswerBlock answerBlock = answerBlockRepository
+                .findById(answerId)
+                .orElseThrow(() ->
+                        new RuntimeException("Answer not found"));
+
+        if (!answerBlock.getQuestion().getId().equals(questionId)) {
+            throw new RuntimeException(
+                    "Answer does not belong to this question");
+        }
+
+        if (answerBlock.getType() != AnswerBlockType.TABLE) {
+            throw new RuntimeException(
+                    "Answer is not a TABLE answer");
+        }
+
+        // Update display order
+        answerBlock.setDisplayOrder(request.getDisplayOrder());
+
+        answerBlockRepository.save(answerBlock);
+
+
+        // Find existing table
+        AnswerTable table = answerTableRepository
+                .findByAnswerBlockId(answerId)
+                .orElseThrow(() ->
+                        new RuntimeException("Table not found"));
+
+
+        // =========================
+        // DELETE OLD CELLS
+        // =========================
+
+        List<TableRow> oldRows =
+                tableRowRepository
+                        .findByTableIdOrderByDisplayOrderAsc(
+                                table.getId()
+                        );
+
+        for (TableRow row : oldRows) {
+
+            List<TableCell> cells =
+                    tableCellRepository
+                            .findByRowIdOrderByColumnOrderAsc(
+                                    row.getId()
+                            );
+
+            tableCellRepository.deleteAll(cells);
+        }
+
+
+        // =========================
+        // DELETE OLD ROWS
+        // =========================
+
+        tableRowRepository.deleteAll(oldRows);
+
+
+        // =========================
+        // DELETE OLD COLUMNS
+        // =========================
+
+        List<TableColumn> oldColumns =
+                tableColumnRepository
+                        .findByTableIdOrderByDisplayOrderAsc(
+                                table.getId()
+                        );
+
+        tableColumnRepository.deleteAll(oldColumns);
+
+
+        // =========================
+        // CREATE NEW COLUMNS
+        // =========================
+
+        List<String> columns = request.getColumns();
+
+        for (int i = 0; i < columns.size(); i++) {
+
+            TableColumn tableColumn = new TableColumn();
+
+            tableColumn.setTable(table);
+            tableColumn.setColumnName(columns.get(i));
+            tableColumn.setDisplayOrder(i + 1);
+
+            tableColumnRepository.save(tableColumn);
+        }
+
+
+        // =========================
+        // CREATE NEW ROWS + CELLS
+        // =========================
+
+        List<List<String>> rows = request.getRows();
+
+        for (int rowIndex = 0;
+             rowIndex < rows.size();
+             rowIndex++) {
+
+            TableRow tableRow = new TableRow();
+
+            tableRow.setTable(table);
+            tableRow.setDisplayOrder(rowIndex + 1);
+
+            TableRow savedRow =
+                    tableRowRepository.save(tableRow);
+
+
+            List<String> cells = rows.get(rowIndex);
+
+            for (int columnIndex = 0;
+                 columnIndex < cells.size();
+                 columnIndex++) {
+
+                TableCell tableCell = new TableCell();
+
+                tableCell.setRow(savedRow);
+                tableCell.setContent(cells.get(columnIndex));
+                tableCell.setColumnOrder(columnIndex + 1);
+
+                tableCellRepository.save(tableCell);
+            }
+        }
+
+        return answerBlock;
+    }
+
+
+    // =========================
+    // DELETE ANSWER
+    // =========================
+
+    public String deleteAnswer(
+            Long questionId,
+            Long answerId) {
 
         if (!questionRepository.existsById(questionId)) {
             throw new RuntimeException("Question not found");
@@ -201,7 +379,8 @@ public class AnswerService {
     // CONVERT ANSWER TO RESPONSE
     // =========================
 
-    private AnswerResponse convertToResponse(AnswerBlock block) {
+    private AnswerResponse convertToResponse(
+            AnswerBlock block) {
 
         // TEXT answer
         if (block.getType() == AnswerBlockType.TEXT) {
@@ -240,23 +419,25 @@ public class AnswerService {
 
 
         // Convert columns
-        List<String> columnNames = columns.stream()
-                .map(TableColumn::getColumnName)
-                .toList();
+        List<String> columnNames =
+                columns.stream()
+                        .map(TableColumn::getColumnName)
+                        .toList();
 
 
         // Convert rows + cells
-        List<List<String>> rowData = rows.stream()
-                .map(row ->
-                        tableCellRepository
-                                .findByRowIdOrderByColumnOrderAsc(
-                                        row.getId()
-                                )
-                                .stream()
-                                .map(TableCell::getContent)
-                                .toList()
-                )
-                .toList();
+        List<List<String>> rowData =
+                rows.stream()
+                        .map(row ->
+                                tableCellRepository
+                                        .findByRowIdOrderByColumnOrderAsc(
+                                                row.getId()
+                                        )
+                                        .stream()
+                                        .map(TableCell::getContent)
+                                        .toList()
+                        )
+                        .toList();
 
 
         TableResponse tableResponse =

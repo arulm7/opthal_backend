@@ -35,18 +35,47 @@ public class AnswerController {
         return answerService.addTableAnswer(questionId, request);
     }
 
+    @PutMapping("/{questionId}/answers/{answerId}/text")
+    public AnswerBlock updateTextAnswer(
+            @PathVariable Long questionId,
+            @PathVariable Long answerId,
+            @RequestBody TextAnswerRequest request) {
+
+        return answerService.updateTextAnswer(
+                questionId,
+                answerId,
+                request
+        );
+    }
+
+    @PutMapping("/{questionId}/answers/{answerId}/table")
+    public AnswerBlock updateTableAnswer(
+            @PathVariable Long questionId,
+            @PathVariable Long answerId,
+            @RequestBody TableAnswerRequest request) {
+
+        return answerService.updateTableAnswer(
+                questionId,
+                answerId,
+                request
+        );
+    }
+
+    @DeleteMapping("/{questionId}/answers/{answerId}")
+    public String deleteAnswer(
+            @PathVariable Long questionId,
+            @PathVariable Long answerId) {
+
+        return answerService.deleteAnswer(
+                questionId,
+                answerId
+        );
+    }
+
     @GetMapping("/{questionId}/answers")
     public List<AnswerResponse> getAnswers(
             @PathVariable Long questionId) {
 
         return answerService.getAnswers(questionId);
     }
-    @DeleteMapping("/{questionId}/answers/{answerId}")
-    public String deleteAnswer(
-            @PathVariable Long questionId,
-            @PathVariable Long answerId) {
-
-        return answerService.deleteAnswer(questionId, answerId);
-    }
-
 }

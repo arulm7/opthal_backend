@@ -26,6 +26,12 @@ public class AnswerBlock {
     @Column(nullable = false)
     private Integer displayOrder;
 
+    @JsonIgnore
+    @OneToOne(mappedBy = "answerBlock", cascade = CascadeType.ALL, orphanRemoval = true)
+    private AnswerTable answerTable;
+
+
+
     public AnswerBlock() {
     }
 
@@ -68,4 +74,12 @@ public class AnswerBlock {
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
     }
-}
+
+    public AnswerTable getAnswerTable() {
+        return answerTable;
+    }
+
+    public void setAnswerTable(AnswerTable answerTable) {
+        this.answerTable = answerTable;
+    }
+}
