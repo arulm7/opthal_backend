@@ -23,6 +23,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private String resetToken;
+
+    private java.time.LocalDateTime resetTokenExpiry;
+
     public User() {
     }
 
@@ -82,4 +86,20 @@ public class User {
     public void setRole(Role role) {
         this.role = role;
     }
-}
+
+    public String getResetToken() {
+        return resetToken;
+    }
+
+    public void setResetToken(String resetToken) {
+        this.resetToken = resetToken;
+    }
+
+    public java.time.LocalDateTime getResetTokenExpiry() {
+        return resetTokenExpiry;
+    }
+
+    public void setResetTokenExpiry(java.time.LocalDateTime resetTokenExpiry) {
+        this.resetTokenExpiry = resetTokenExpiry;
+    }
+}

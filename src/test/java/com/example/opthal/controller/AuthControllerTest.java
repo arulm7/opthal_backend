@@ -3,6 +3,8 @@ package com.example.opthal.controller;
 import com.example.opthal.dto.LoginRequest;
 import com.example.opthal.dto.LoginResponse;
 import com.example.opthal.dto.RegisterRequest;
+import com.example.opthal.dto.ForgotPasswordRequest;
+import com.example.opthal.dto.ResetPasswordRequest;
 import com.example.opthal.service.AuthService;
 import com.example.opthal.security.JwtService;
 import com.example.opthal.security.CustomUserDetailsService;
@@ -95,4 +97,47 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.name").value("Test User"))
                 .andExpect(jsonPath("$.token").value("mock-jwt-token"));
     }
+
+    @Test
+    public void testForgotPassword() throws Exception {
+        ForgotPasswordRequest request = new ForgotPasswordRequest("test@gmail.com");
+
+        Mockito.when(authService.forgotPassword(any(ForgotPasswordRequest.class)))
+                .thenReturn("If the email is registered, a password reset link has been sent.");
+
+        mockMvc.perform(post("/api/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("If the email is registered, a password reset link has been sent."));
+    }
+
+    @Test
+    public void testResetPasswordSuccess() throws Exception {
+        ResetPasswordRequest request = new ResetPasswordRequest("some-token", "NewPassword@123");
+
+        Mockito.when(authService.resetPassword(any(ResetPasswordRequest.class)))
+                .thenReturn("Password reset successfully");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password reset successfully"));
+    }
+
+    @Test
+    public void testResetPasswordFailure() throws Exception {
+        ResetPasswordRequest request = new ResetPasswordRequest("invalid-token", "NewPassword@123");
+
+        Mockito.when(authService.resetPassword(any(ResetPasswordRequest.class)))
+                .thenThrow(new RuntimeException("Invalid or expired reset token"));
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid or expired reset token"));
+    }
 }
+
