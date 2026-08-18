@@ -5,7 +5,13 @@ import com.example.opthal.dto.TableAnswerRequest;
 import com.example.opthal.dto.TextAnswerRequest;
 import com.example.opthal.model.AnswerBlock;
 import com.example.opthal.service.AnswerService;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -33,6 +39,27 @@ public class AnswerController {
             @RequestBody TableAnswerRequest request) {
 
         return answerService.addTableAnswer(questionId, request);
+    }
+
+    @PostMapping(value = "/{questionId}/answers/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public AnswerBlock addImageAnswer(
+            @PathVariable Long questionId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "displayOrder", defaultValue = "1") Integer displayOrder) {
+
+        return answerService.addImageAnswer(questionId, file, displayOrder);
+    }
+
+    @GetMapping("/answers/images/{filename:.+}")
+    public ResponseEntity<Resource> viewAnswerImage(@PathVariable String filename) {
+        Resource resource = answerService.getImageResource(filename);
+        MediaType mediaType = MediaTypeFactory.getMediaType(resource)
+                .orElse(MediaType.APPLICATION_OCTET_STREAM);
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 
     @PutMapping("/{questionId}/answers/{answerId}/text")

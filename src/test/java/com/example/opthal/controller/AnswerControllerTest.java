@@ -207,4 +207,60 @@ public class AnswerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("Answer deleted successfully"));
     }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void testAddImageAnswerAsUserForbidden() throws Exception {
+        org.springframework.mock.web.MockMultipartFile mockFile =
+                new org.springframework.mock.web.MockMultipartFile("file", "test.jpg", "image/jpeg", "dummy-bytes".getBytes());
+
+        mockMvc.perform(multipart("/api/questions/1/answers/image")
+                        .file(mockFile)
+                        .param("displayOrder", "3"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testAddImageAnswerAsAdminSuccess() throws Exception {
+        org.springframework.mock.web.MockMultipartFile mockFile =
+                new org.springframework.mock.web.MockMultipartFile("file", "test.jpg", "image/jpeg", "dummy-bytes".getBytes());
+
+        AnswerBlock block = new AnswerBlock();
+        block.setId(15L);
+        block.setType(AnswerBlockType.IMAGE);
+        block.setContent("550e8400-e29b-41d4-a716-446655440000.jpg");
+        block.setDisplayOrder(3);
+
+        Mockito.when(answerService.addImageAnswer(eq(1L), any(), eq(3)))
+                .thenReturn(block);
+
+        mockMvc.perform(multipart("/api/questions/1/answers/image")
+                        .file(mockFile)
+                        .param("displayOrder", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(15))
+                .andExpect(jsonPath("$.type").value("IMAGE"))
+                .andExpect(jsonPath("$.content").value("550e8400-e29b-41d4-a716-446655440000.jpg"))
+                .andExpect(jsonPath("$.displayOrder").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void testViewAnswerImageAsUserSuccess() throws Exception {
+        org.springframework.core.io.ByteArrayResource resource =
+                new org.springframework.core.io.ByteArrayResource("dummy-image-content".getBytes()) {
+                    @Override
+                    public String getFilename() {
+                        return "550e8400-e29b-41d4-a716-446655440000.jpg";
+                    }
+                };
+
+        Mockito.when(answerService.getImageResource("550e8400-e29b-41d4-a716-446655440000.jpg"))
+                .thenReturn(resource);
+
+        mockMvc.perform(get("/api/questions/answers/images/550e8400-e29b-41d4-a716-446655440000.jpg"))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes("dummy-image-content".getBytes()));
+    }
 }

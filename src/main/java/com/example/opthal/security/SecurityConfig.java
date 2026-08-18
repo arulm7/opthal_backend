@@ -56,16 +56,17 @@ public class SecurityConfig {
 
 
                         // =========================
-                        // ANSWERS
+                        // ANSWERS & IMAGES
                         // =========================
 
-                        // USER + ADMIN can view answers
+                        // USER + ADMIN can view answers and answer images
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/questions/*/answers"
+                                "/api/questions/*/answers",
+                                "/api/questions/answers/images/**"
                         ).hasAnyRole("USER", "ADMIN")
 
-                        // ADMIN can create TEXT/TABLE answers
+                        // ADMIN can create TEXT/TABLE/IMAGE answers
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/questions/*/answers/**"

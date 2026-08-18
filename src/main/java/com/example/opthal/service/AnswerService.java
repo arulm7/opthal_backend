@@ -17,7 +17,9 @@ import com.example.opthal.repository.QuestionRepository;
 import com.example.opthal.repository.TableCellRepository;
 import com.example.opthal.repository.TableColumnRepository;
 import com.example.opthal.repository.TableRowRepository;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class AnswerService {
     private final TableColumnRepository tableColumnRepository;
     private final TableRowRepository tableRowRepository;
     private final TableCellRepository tableCellRepository;
+    private final FileStorageService fileStorageService;
 
     public AnswerService(
             AnswerBlockRepository answerBlockRepository,
@@ -37,7 +40,8 @@ public class AnswerService {
             AnswerTableRepository answerTableRepository,
             TableColumnRepository tableColumnRepository,
             TableRowRepository tableRowRepository,
-            TableCellRepository tableCellRepository) {
+            TableCellRepository tableCellRepository,
+            FileStorageService fileStorageService) {
 
         this.answerBlockRepository = answerBlockRepository;
         this.questionRepository = questionRepository;
@@ -45,7 +49,9 @@ public class AnswerService {
         this.tableColumnRepository = tableColumnRepository;
         this.tableRowRepository = tableRowRepository;
         this.tableCellRepository = tableCellRepository;
+        this.fileStorageService = fileStorageService;
     }
+
 
 
     // =========================
@@ -327,6 +333,40 @@ public class AnswerService {
 
 
     // =========================
+    // ADD IMAGE ANSWER
+    // =========================
+
+    public AnswerBlock addImageAnswer(
+            Long questionId,
+            MultipartFile file,
+            Integer displayOrder) {
+
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() ->
+                        new RuntimeException("Question not found"));
+
+        String filename = fileStorageService.storeAnswerImage(file);
+
+        AnswerBlock answerBlock = new AnswerBlock();
+        answerBlock.setQuestion(question);
+        answerBlock.setType(AnswerBlockType.IMAGE);
+        answerBlock.setContent(filename);
+        answerBlock.setDisplayOrder(displayOrder != null ? displayOrder : 1);
+
+        return answerBlockRepository.save(answerBlock);
+    }
+
+
+    // =========================
+    // GET IMAGE RESOURCE
+    // =========================
+
+    public Resource getImageResource(String filename) {
+        return fileStorageService.loadAnswerImage(filename);
+    }
+
+
+    // =========================
     // DELETE ANSWER
     // =========================
 
@@ -346,6 +386,10 @@ public class AnswerService {
         if (!answerBlock.getQuestion().getId().equals(questionId)) {
             throw new RuntimeException(
                     "Answer does not belong to this question");
+        }
+
+        if (answerBlock.getType() == AnswerBlockType.IMAGE && answerBlock.getContent() != null) {
+            fileStorageService.deleteAnswerImage(answerBlock.getContent());
         }
 
         answerBlockRepository.delete(answerBlock);
@@ -394,6 +438,18 @@ public class AnswerService {
             );
         }
 
+        // IMAGE answer
+        if (block.getType() == AnswerBlockType.IMAGE) {
+
+            return new AnswerResponse(
+                    block.getId(),
+                    block.getType(),
+                    block.getContent(),
+                    block.getDisplayOrder(),
+                    null
+            );
+        }
+
 
         // TABLE answer
         AnswerTable table = answerTableRepository
@@ -432,7 +488,7 @@ public class AnswerService {
                                 tableCellRepository
                                         .findByRowIdOrderByColumnOrderAsc(
                                                 row.getId()
-                                        )
+                                         )
                                         .stream()
                                         .map(TableCell::getContent)
                                         .toList()
