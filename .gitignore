@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+hs_err_pid38856.log
+replay_pid38856.log
+src/main/resources/data.sql
